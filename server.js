@@ -16,7 +16,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gatepass", gatePassRoutes);
 app.use("/api/mentor", mentorRoutes);
 app.use("/",( req, res) => {
-    res.send("Welcome to GatePass API")
+    res.status(200).json({ message: "Welcome to the GatePass API" });
 })
 
 
