@@ -15,7 +15,7 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/gatepass", gatePassRoutes);
 app.use("/api/mentor", mentorRoutes);
-app.use("/", (req, res) => res.json({ message: "Coupon Service" }));
+app.use("/", (req, res) => res.json({ message: "Api form Gate Pass Backend" }));
 
 
 const PORT = process.env.PORT || 5000;
