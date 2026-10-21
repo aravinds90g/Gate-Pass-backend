@@ -4,7 +4,8 @@ const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    // Never selected by default: login opts in explicitly with +password.
+    password: { type: String, required: true, select: false },
     role: {
       type: String,
       enum: ["admin", "warden", "security", "mentor", "student"],

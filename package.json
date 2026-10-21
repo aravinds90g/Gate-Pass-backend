@@ -1,4 +1,10 @@
 {
+  "name": "gate-pass-backend",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18 <26"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -11,6 +17,7 @@
     "nodemon": "^3.1.9"
   },
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   }
 }
