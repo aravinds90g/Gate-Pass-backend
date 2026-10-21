@@ -4,35 +4,48 @@ const {
   createGatePass,
   getAllGatePasses,
   updateGatePass,
-  rejectGatePass,
   getGatePassesByEmail,
   getGatePassById,
+  getGatePassQr,
+  verifyGatePassQr,
 } = require("../controllers/gatePassController");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// Apply for a gate pass
-router.post("/apply", createGatePass);
+// Apply for a gate pass (students only; ownership comes from the token)
+router.post("/apply", authMiddleware(["student"]), createGatePass);
 
-// Get all gate pass requests
-router.get("/", getAllGatePasses);
+// Admin + warden dashboards list every pass
+router.get("/", authMiddleware(["admin", "warden"]), getAllGatePasses);
 
-router.get("/email", getGatePassesByEmail);
-// Approve a gate pass
+// Students read only their own passes; staff use the role-scoped lists.
+router.get("/email", authMiddleware(["student"]), getGatePassesByEmail);
+
+// Security scans a signed QR token
+router.post(
+  "/verify",
+  authMiddleware(["security", "admin"]),
+  verifyGatePassQr
+);
+
+// Short-lived signed token for a student's QR code
+router.get(
+  "/:id/qr",
+  authMiddleware(["student", "security", "admin"]),
+  getGatePassQr
+);
+
+// Approve / reject / forward / activate / expire
 router.put(
   "/update/:id",
-  authMiddleware(["admin", "security","warden","mentor"]),
+  authMiddleware(["admin", "security", "warden", "mentor"]),
   updateGatePass
 );
 
-router.get("/passdata/:id", getGatePassById);
-
-// Get pass by dept and year
-
-
-
-
-
-// Reject a gate pass
-
+// Single pass details (owner or staff)
+router.get(
+  "/passdata/:id",
+  authMiddleware(["student", "mentor", "warden", "admin", "security"]),
+  getGatePassById
+);
 
 module.exports = router;

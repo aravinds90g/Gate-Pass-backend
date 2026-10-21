@@ -6,9 +6,11 @@ const {
 } = require("../controllers/gatePassController");
 const authMiddleware = require("../middleware/authMiddleware");
 
+// Mentors see pending Home passes for their own department/year only; the
+// cohort is taken from the token, not from the query string.
 router.get(
   "/deptyear",
-//   authMiddleware(["admin", "security"]),
+  authMiddleware(["mentor"]),
   getGatePassByDeptAndYear
 );
 

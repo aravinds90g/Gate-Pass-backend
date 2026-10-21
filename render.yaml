@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: gate-pass-backend
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      # Render's Node runtime installs dependencies on every build; npm ci
+      # makes that explicit now that node_modules/ is no longer committed.
+      - key: NODE_VERSION
+        value: 22.20.0
+      # Set these in the dashboard (or let a blueprint generate the secrets).
+      # MONGO_URI must point at a dedicated, least-privilege database user.
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_SECRET
+        generateValue: true
+      # Optional hardening / operations.
+      - key: MENTOR_EMAIL_DOMAIN
+        sync: false
+      - key: STAFF_SIGNUP_KEY
+        sync: false
