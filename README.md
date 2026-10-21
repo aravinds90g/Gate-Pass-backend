@@ -28,6 +28,39 @@ Mentors may self-register, but their department/year is self-declared. Set
 `MENTOR_EMAIL_DOMAIN` (e.g. `college.edu`) to require a college email for
 mentor signup, and review mentor accounts before relying on them.
 
+## Deploying
+
+`render.yaml` declares `npm ci` as the build command, `npm start` as the
+start command and `/` as the health check. Dependencies are no longer
+committed, so the platform must install them on every build. If the
+service is not managed by a Render Blueprint, set the same commands in the
+dashboard.
+
+Node 18-22 is supported; `render.yaml` pins `NODE_VERSION=22.20.0`.
+
+## Rotating credentials
+
+The original `.env` (shared Atlas user + weak `JWT_SECRET`) is in git
+history. Treat those values as public and do not reuse them.
+
+```bash
+MONGO_URI="<admin connection string>" \
+  node scripts/rotate-credentials.js --apply
+```
+
+This creates a dedicated `gatepass_app` user with `readWrite` on `GatePass`
+only, verifies the new login, and writes a `0600` JSON file containing a new
+`MONGO_URI`, `JWT_SECRET` and `QR_SECRET`. Set those three on the service,
+redeploy, then check:
+
+```bash
+curl -i https://<host>/api/gatepass/   # must be 401
+```
+
+Rotate the old shared Atlas user separately - other databases in the
+cluster may still use it. `--delete` removes the dedicated user if the
+rotation is aborted.
+
 ## Authorization model
 
 | Route | Who |
