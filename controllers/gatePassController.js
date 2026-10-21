@@ -5,6 +5,21 @@ const { QR_SECRET } = require("../config/secrets");
 
 const STAFF_ROLES = ["admin", "warden", "security", "mentor"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A shape check alone accepts nonsense like 9999-99-99, which would then be
+ * compared lexicographically by the travel-window check forever. Require a
+ * real calendar date that round-trips through Date.
+ */
+function isValidDateKey(value) {
+  const text = String(value || "").trim();
+  if (!DATE_PATTERN.test(text)) return false;
+  const parsed = new Date(`${text}T00:00:00Z`);
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === text
+  );
+}
 const STUDENT_FIELDS = "name rollNo dept year email";
 
 const QR_TTL_MS = 10 * 60 * 1000;
@@ -76,7 +91,7 @@ exports.createGatePass = async (req, res) => {
         .status(400)
         .json({ success: false, message: "A valid reason is required" });
     }
-    if (!DATE_PATTERN.test(cleanDate)) {
+    if (!isValidDateKey(cleanDate)) {
       return res
         .status(400)
         .json({ success: false, message: "A valid leaving date is required" });
@@ -99,7 +114,7 @@ exports.createGatePass = async (req, res) => {
     }
 
     if (reason === "Home") {
-      if (!DATE_PATTERN.test(cleanComingDate) || cleanComingDate < cleanDate) {
+      if (!isValidDateKey(cleanComingDate) || cleanComingDate < cleanDate) {
         return res.status(400).json({
           success: false,
           message: "A return date on or after the leaving date is required",
@@ -198,50 +213,24 @@ exports.getAllGatePasses = async (req, res) => {
   }
 };
 
-// Get gate passes for a student by email
+// Get the signed-in student's own gate passes
 exports.getGatePassesByEmail = async (req, res) => {
   try {
+    // Student-only endpoint: the profile, pass-status and approved-pass
+    // screens only ever need the caller's own list. Staff screens use the
+    // role-scoped list or single-pass routes instead.
     const requested = String(req.query.email || "")
       .trim()
       .toLowerCase();
 
-    let email;
-    if (req.user.role === "student") {
-      // Students may only ever read their own passes, whatever they ask for.
-      if (requested && requested !== String(req.user.email).toLowerCase()) {
-        return res.status(403).json({
-          success: false,
-          message: "You can only view your own gate passes",
-        });
-      }
-      email = req.user.email;
-    } else if (isStaff(req.user.role)) {
-      if (!requested) {
-        return res.status(400).json({
-          success: false,
-          message: "An email query parameter is required",
-        });
-      }
-      email = requested;
-    } else {
-      return res
-        .status(403)
-        .json({ success: false, message: "Insufficient permissions" });
+    if (requested && requested !== String(req.user.email).toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view your own gate passes",
+      });
     }
 
-    let studentId;
-    if (req.user.role === "student") {
-      studentId = req.user.id;
-    } else {
-      studentId = await resolveStudentId(email);
-      if (!studentId) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Student not found!" });
-      }
-    }
-
-    const gatePasses = await GatePass.find({ student: studentId })
+    const gatePasses = await GatePass.find({ student: req.user.id })
       .sort({ appliedAt: -1 })
       .populate("student", STUDENT_FIELDS);
 
@@ -253,14 +242,6 @@ exports.getGatePassesByEmail = async (req, res) => {
       .json({ success: false, message: "Server error" });
   }
 };
-
-async function resolveStudentId(email) {
-  const User = require("../models/User");
-  const student = await User.findOne({
-    email: String(email).trim().toLowerCase(),
-  }).select("_id");
-  return student ? student._id : null;
-}
 
 // Get a specific gate pass by id
 exports.getGatePassById = async (req, res) => {
@@ -539,6 +520,9 @@ exports.getGatePassByDeptAndYear = async (req, res) => {
       reason: "Home",
       forwarded: false,
     })
+      // The mentor UI shows student, reason and dates only; parent contact
+      // details are not needed to forward a pass and stay private.
+      .select("-parentContact -parentName")
       .sort({ appliedAt: -1 })
       .populate("student", STUDENT_FIELDS);
 

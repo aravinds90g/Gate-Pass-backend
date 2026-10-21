@@ -24,18 +24,22 @@ Public `POST /api/auth/register` only accepts `student` and `mentor`. Staff
 3. bootstrap: when no staff account exists yet, the first `admin` may be
    registered without authentication. Create it immediately after deploying.
 
+Mentors may self-register, but their department/year is self-declared. Set
+`MENTOR_EMAIL_DOMAIN` (e.g. `college.edu`) to require a college email for
+mentor signup, and review mentor accounts before relying on them.
+
 ## Authorization model
 
 | Route | Who |
 | --- | --- |
 | `POST /api/gatepass/apply` | student (owner comes from the token) |
 | `GET /api/gatepass/` | admin, warden |
-| `GET /api/gatepass/email` | student (own only), staff |
+| `GET /api/gatepass/email` | student (own only) |
 | `GET /api/gatepass/passdata/:id` | owner, staff |
 | `GET /api/gatepass/:id/qr` | owner, security, admin |
 | `POST /api/gatepass/verify` | security, admin |
 | `PUT /api/gatepass/update/:id` | role-scoped transitions, see below |
-| `GET /api/mentor/deptyear` | mentor (own dept/year from token) |
+| `GET /api/mentor/deptyear` | mentor (own dept/year from token, no parent contact) |
 
 Status transitions are enforced server-side:
 

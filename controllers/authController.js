@@ -100,6 +100,20 @@ exports.registerUser = async (req, res) => {
       return badRequest(res, "Department and year are required for mentors");
     }
 
+    // Optional hardening: restrict mentor self-registration to a college
+    // domain. Unset means any domain is accepted (pre-existing behaviour).
+    const mentorDomain = process.env.MENTOR_EMAIL_DOMAIN;
+    if (
+      role === "mentor" &&
+      mentorDomain &&
+      !normalizedEmail.endsWith(`@${mentorDomain.toLowerCase()}`)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: `Mentor accounts must use an @${mentorDomain} email address`,
+      });
+    }
+
     let user = await User.findOne({ email: normalizedEmail });
     if (user) {
       return res

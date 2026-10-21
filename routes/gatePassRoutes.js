@@ -17,12 +17,8 @@ router.post("/apply", authMiddleware(["student"]), createGatePass);
 // Admin + warden dashboards list every pass
 router.get("/", authMiddleware(["admin", "warden"]), getAllGatePasses);
 
-// Students read their own passes; staff may query a student by email
-router.get(
-  "/email",
-  authMiddleware(["student", "mentor", "warden", "admin", "security"]),
-  getGatePassesByEmail
-);
+// Students read only their own passes; staff use the role-scoped lists.
+router.get("/email", authMiddleware(["student"]), getGatePassesByEmail);
 
 // Security scans a signed QR token
 router.post(
